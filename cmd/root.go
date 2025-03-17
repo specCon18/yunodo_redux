@@ -25,7 +25,7 @@ type Comment struct {
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-    Use:   "v2",
+    Use:   "yunodo_redux",
     Short: "Tooling to make dealing with TODO statements in comments easier to manage.",
     Long: `YUNODO redux is a better written version of a tool I wrote for internal use.
 This application is a tool that takes comments that start with TODO: and outputs them in a given format.
@@ -38,7 +38,7 @@ PRIORITY_VALUE is a priority from 0-9 where 9 is least critical and 0 is needs p
 and PATH_TO_PROJECT is the path to your codebase's root.
 
 Usage:
-    yunodo -p <PATH_TO_PROJECT>
+    yunodo_redux -p <PATH_TO_PROJECT>
 
 `,
     // Uncomment the following line if your bare application

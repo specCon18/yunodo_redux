@@ -7,7 +7,7 @@
 *.dll
 *.so
 *.dylib
-./yunodo_redux
+yunodo_redux
 
 # Test binary, built with `go test -c`
 *.test

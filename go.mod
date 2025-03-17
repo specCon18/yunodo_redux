@@ -1,4 +1,4 @@
-module speccon18/yunodo/v2
+module speccon18/yunodo_redux
 
 go 1.23.4
 

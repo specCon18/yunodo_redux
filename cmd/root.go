@@ -47,7 +47,8 @@ Usage:
         path, _ := cmd.Flags().GetString("path")
 	    if path != "" {
 		comments := readFileTree(path)
-		mdTableFormatter(comments)	
+		table := mdTableFormatter(comments)
+		fmt.Print(table)
 	    } else {
 	        fmt.Println("ERROR: No path provided, please provide path using the -p flag")
 	        os.Exit(1)
@@ -67,6 +68,54 @@ func Execute() {
 func init() {
     rootCmd.PersistentFlags().StringP("path", "p", "","assign the path to get comments from.")
 }
+
+// Function to extract priority from the TODO comment
+func extractPriority(line string) (int, error) {
+    re := regexp.MustCompile(`P:(\d)`)
+    matches := re.FindStringSubmatch(line)
+
+    if len(matches) > 1 {
+        // Convert the priority string (matches[1]) to an integer
+        priority, err := strconv.Atoi(matches[1])
+        if err != nil {
+            return 0, err
+        }
+        return priority, nil
+    }
+    return 9, nil // Default priority if none is found
+}
+
+// Function to extract the task from the TODO comment
+func extractTask(line string) string {
+    trimmedLine := strings.TrimSpace(line)
+    trimmedLine = strings.TrimPrefix(trimmedLine, "//TODO: ")
+    return strings.TrimSpace(trimmedLine)
+}
+
+//TODO: P:0 add support for TODO's not at start of line
+//TODO: P:0 add multiline support /* */
+// Extract comments from a line
+func extractCommentFromLine(path, p string, ln int, line string) (Comment, error) {
+    if strings.HasPrefix(strings.TrimSpace(line), "//TODO:") {
+        // Extract priority and task using helper functions
+        priority, err := extractPriority(line)
+        if err != nil {
+            return Comment{}, err
+        }
+
+        task := extractTask(line)
+
+        // Return the Comment object
+        return Comment{
+            FilePath:  filepath.Join(path, p),
+            LineNumber: ln,
+            Priority: priority,
+            Task:     task,
+        }, nil
+    }
+    return Comment{}, nil // No comment found, return an empty Comment
+}
+
 func readFileTree(path string) []Comment {
     fsys := os.DirFS(path)
     var comments []Comment
@@ -88,45 +137,18 @@ func readFileTree(path string) []Comment {
 
             // Process each line in the file
             scanner := bufio.NewScanner(file)
-	    ln := 0
+            ln := 0
             for scanner.Scan() {
-		line := scanner.Text()
-		ln++
-		//TODO: P:0 add support for TODO's not at start of line
-		//TODO: P:0 add multiline support /* */
-                // Check for C-style comments (// and )
-                if strings.HasPrefix(strings.TrimSpace(line), "//TODO:") {
-                    // Regular expression to match "P:" followed by a digit
-                    re := regexp.MustCompile(`P:(\d)`)
-
-                    // Trim spaces and remove the "//TODO:" prefix
-                    trimmedLine := strings.TrimSpace(line)
-                    trimmedLine = strings.TrimPrefix(trimmedLine, "//TODO: ")
-
-                    // Try to find the priority
-                    matches := re.FindStringSubmatch(trimmedLine)
-    
-                    // If a priority is found, remove it and print the comment and priority
-                    if len(matches) > 1 {
-                        // Remove the "P:<digit>" from the beginning of the line
-                        trimmedLine = strings.Replace(trimmedLine, matches[0], "", 1) // Replace only the first occurrence
-			// Store the file_path, line_number, comment, and priority as vars to be used in constructing a Comment object.
-			priority,err := strconv.Atoi(matches[1])
-			if err != nil {
-			    return err
-			}
-
-			file,task := filepath.Join(path, p), strings.TrimSpace(trimmedLine) 
-			
-			comment := Comment{file,ln,priority,task}
-			comments = append(comments,comment)
-                    } else {
-			file,task := filepath.Join(path, p), strings.TrimSpace(trimmedLine) 
-                        comment := Comment{file,ln,9,task}
-			comments = append(comments,comment)
-		    }
+                line := scanner.Text()
+                ln++
+                // Use the new helper function to extract the comment
+                comment, err := extractCommentFromLine(path, p, ln, line)
+                if err != nil {
+                    return err
                 }
-
+                if (comment != Comment{}) {
+                    comments = append(comments, comment)
+                }
             }
 
             // Check if there was any error reading the file
@@ -139,11 +161,12 @@ func readFileTree(path string) []Comment {
     return comments
 }
 
-func mdTableFormatter(comments []Comment) {
-	fmt.Println("| File Path | Line Number | Priority | Task |")
-	fmt.Println("| --------- | ----------- | -------- | ---- |")
+func mdTableFormatter(comments []Comment) string {
+	table := fmt.Sprintf("| File Path | Line Number | Priority | Task |\n| --------- | ----------- | -------- | ---- |\n")
 	for _, comment := range comments {
     		// You can access each `comment` here
-		fmt.Printf("| %s | %d | %d | %s |\n",comment.FilePath,comment.LineNumber,comment.Priority,comment.Task)
+		row := fmt.Sprintf("| %s | %d | %d | %s |\n",comment.FilePath,comment.LineNumber,comment.Priority,comment.Task)
+		table = table + row
 	}
+	return table
 }

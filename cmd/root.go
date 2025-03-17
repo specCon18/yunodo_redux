@@ -11,10 +11,17 @@ import (
     "path/filepath"
     "github.com/spf13/cobra"
     "strings"
+    "strconv"
     "bufio"
     "regexp"
 )
 
+type Comment struct {
+    FilePath     string
+    LineNumber   int
+    Priority     int
+    Task         string
+}
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -39,8 +46,8 @@ Usage:
     Run: func(cmd *cobra.Command, args []string) {
         path, _ := cmd.Flags().GetString("path")
 	    if path != "" {
-	    //TODO: recursivly read each file in the path and store content as string in slice
-	   	readFileTree(path) 
+		comments := readFileTree(path)
+		fmt.Println(comments)
 	    } else {
 	        fmt.Println("ERROR: No path provided, please provide path using the -p flag")
 	        os.Exit(1)
@@ -60,8 +67,9 @@ func Execute() {
 func init() {
     rootCmd.PersistentFlags().StringP("path", "p", "","assign the path to get comments from.")
 }
-func readFileTree(path string) {
+func readFileTree(path string) []Comment {
     fsys := os.DirFS(path)
+    var comments []Comment
 
     // Walk through all files in the directory
     fs.WalkDir(fsys, ".", func(p string, d fs.DirEntry, err error) error {
@@ -80,11 +88,13 @@ func readFileTree(path string) {
 
             // Process each line in the file
             scanner := bufio.NewScanner(file)
+	    ln := 0
             for scanner.Scan() {
-                line := scanner.Text()
-
+		line := scanner.Text()
+		ln++
 		//TODO: P:0 add support for TODO's not at start of line
-                // Check for C-style comments (// and /* */)
+		//TODO: P:0 add multiline support /* */
+                // Check for C-style comments (// and )
                 if strings.HasPrefix(strings.TrimSpace(line), "//TODO:") {
                     // Regular expression to match "P:" followed by a digit
                     re := regexp.MustCompile(`P:(\d)`)
@@ -100,10 +110,21 @@ func readFileTree(path string) {
                     if len(matches) > 1 {
                         // Remove the "P:<digit>" from the beginning of the line
                         trimmedLine = strings.Replace(trimmedLine, matches[0], "", 1) // Replace only the first occurrence
-                        fmt.Printf("comment: %s | priority: %s \n", strings.TrimSpace(trimmedLine), matches[1])
+			// Store the file_path, line_number, comment, and priority as vars to be used in constructing a Comment object.
+			priority,err := strconv.Atoi(matches[1])
+			if err != nil {
+			    return err
+			}
+
+			file,task := filepath.Join(path, p), strings.TrimSpace(trimmedLine) 
+			
+			comment := Comment{file,ln,priority,task}
+			comments = append(comments,comment)
                     } else {
-                        fmt.Printf("comment: %s | priority: 9 \n", trimmedLine)
-                    }
+			file,task := filepath.Join(path, p), strings.TrimSpace(trimmedLine) 
+                        comment := Comment{file,ln,9,task}
+			comments = append(comments,comment)
+		    }
                 }
 
             }
@@ -115,4 +136,5 @@ func readFileTree(path string) {
         }
         return nil
     })
+    return comments
 }

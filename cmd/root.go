@@ -47,7 +47,7 @@ Usage:
         path, _ := cmd.Flags().GetString("path")
 	    if path != "" {
 		comments := readFileTree(path)
-		fmt.Println(comments)
+		mdTableFormatter(comments)	
 	    } else {
 	        fmt.Println("ERROR: No path provided, please provide path using the -p flag")
 	        os.Exit(1)
@@ -137,4 +137,13 @@ func readFileTree(path string) []Comment {
         return nil
     })
     return comments
+}
+
+func mdTableFormatter(comments []Comment) {
+	fmt.Println("| File Path | Line Number | Priority | Task |")
+	fmt.Println("| --------- | ----------- | -------- | ---- |")
+	for _, comment := range comments {
+    		// You can access each `comment` here
+		fmt.Printf("| %s | %d | %d | %s |\n",comment.FilePath,comment.LineNumber,comment.Priority,comment.Task)
+	}
 }

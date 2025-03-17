@@ -12,6 +12,7 @@ import (
     "github.com/spf13/cobra"
     "strings"
     "bufio"
+    "regexp"
 )
 
 
@@ -60,96 +61,58 @@ func init() {
     rootCmd.PersistentFlags().StringP("path", "p", "","assign the path to get comments from.")
 }
 func readFileTree(path string) {
-	var count int
-	fsys := os.DirFS(path)
+    fsys := os.DirFS(path)
 
-	// Walk through all files in the directory
-	fs.WalkDir(fsys, ".", func(p string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
+    // Walk through all files in the directory
+    fs.WalkDir(fsys, ".", func(p string, d fs.DirEntry, err error) error {
+        if err != nil {
+            return err
+        }
 
-		// Check if file has .go extension
-		if filepath.Ext(p) == ".go" {
-			// Read the file and check for comments
-			file, err := os.Open(filepath.Join(path, p))
-			if err != nil {
-				return err
-			}
-			defer file.Close()
+        // Check if file has .go extension
+        if filepath.Ext(p) == ".go" {
+            // Read the file and check for comments
+            file, err := os.Open(filepath.Join(path, p))
+            if err != nil {
+                return err
+            }
+            defer file.Close()
 
-			// Process each line in the file
-			scanner := bufio.NewScanner(file)
-			for scanner.Scan() {
-				line := scanner.Text()
+            // Process each line in the file
+            scanner := bufio.NewScanner(file)
+            for scanner.Scan() {
+                line := scanner.Text()
 
-				// Check for C-style comments (// and /* */)
-				if strings.Contains(strings.TrimSpace(line), "//") {
-					count++
-					fmt.Printf("comment: %s | current comment count:%d\n",strings.TrimSpace(line),count)
-				}
-				if strings.Contains(line, "/*") && strings.Contains(line, "*/") {
-					count++
-				}
-			}
+		//TODO: P:0 add support for TODO's not at start of line
+                // Check for C-style comments (// and /* */)
+                if strings.HasPrefix(strings.TrimSpace(line), "//TODO:") {
+                    // Regular expression to match "P:" followed by a digit
+                    re := regexp.MustCompile(`P:(\d)`)
 
-			// Check if there was any error reading the file
-			if err := scanner.Err(); err != nil {
-				return err
-			}
-		}
-		if filepath.Ext(p) == ".lua" {
-			// Read the file and check for comments
-			file, err := os.Open(filepath.Join(path, p))
-			if err != nil {
-				return err
-			}
-			defer file.Close()
+                    // Trim spaces and remove the "//TODO:" prefix
+                    trimmedLine := strings.TrimSpace(line)
+                    trimmedLine = strings.TrimPrefix(trimmedLine, "//TODO: ")
 
-			// Process each line in the file
-			scanner := bufio.NewScanner(file)
-			for scanner.Scan() {
-				line := scanner.Text()
+                    // Try to find the priority
+                    matches := re.FindStringSubmatch(trimmedLine)
+    
+                    // If a priority is found, remove it and print the comment and priority
+                    if len(matches) > 1 {
+                        // Remove the "P:<digit>" from the beginning of the line
+                        trimmedLine = strings.Replace(trimmedLine, matches[0], "", 1) // Replace only the first occurrence
+                        fmt.Printf("comment: %s | priority: %s \n", strings.TrimSpace(trimmedLine), matches[1])
+                    } else {
+                        fmt.Printf("comment: %s | priority: 9 \n", trimmedLine)
+                    }
+                }
 
-				// Check for Lua-style comments (--)
-				if strings.Contains(strings.TrimSpace(line), "--") {
-					count++
-					fmt.Printf("comment: %s | current comment count:%d\n",strings.TrimSpace(line),count)
-				}
-			}
-			// Check if there was any error reading the file
-			if err := scanner.Err(); err != nil {
-				return err
-			}
-		}
-		if filepath.Ext(p) == ".py" {
-			// Read the file and check for comments
-			file, err := os.Open(filepath.Join(path, p))
-			if err != nil {
-				return err
-			}
-			defer file.Close()
-			
-			// Process each line in the file
-			scanner := bufio.NewScanner(file)
-			for scanner.Scan() {
-				line := scanner.Text()
+            }
 
-				// Check for Python-style comments (#)
-				if strings.Contains(strings.TrimSpace(line), "#") {
-					count++ 
-					fmt.Printf("comment: %s | current comment count:%d\n",strings.TrimSpace(line),count)
-				}
-			}
-			// Check if there was any error reading the file
-			if err := scanner.Err(); err != nil {
-				return err
-			}
-		}
-		return nil
-	})
-
-	// Print the number of comments found
-	fmt.Println("Comment count:", count)
+            // Check if there was any error reading the file
+            if err := scanner.Err(); err != nil {
+                return err
+            }
+        }
+        return nil
+    })
 }
-

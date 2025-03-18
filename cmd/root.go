@@ -85,11 +85,16 @@ func extractPriority(line string) (int, error) {
     return 9, nil // Default priority if none is found
 }
 
-// Function to extract the task from the TODO comment
+// Function to extract the task from the TODO comment and remove the priority
 func extractTask(line string) string {
     trimmedLine := strings.TrimSpace(line)
     trimmedLine = strings.TrimPrefix(trimmedLine, "//TODO: ")
-    return strings.TrimSpace(trimmedLine)
+
+    // Remove the priority part (P:<digit>) if it exists
+    re := regexp.MustCompile(`P:\d+`)
+    trimmedLine = re.ReplaceAllString(trimmedLine, "")
+
+    return strings.TrimSpace(trimmedLine) // Return the task without priority
 }
 
 //TODO: P:0 add support for TODO's not at start of line

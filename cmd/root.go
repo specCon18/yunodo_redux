@@ -4,7 +4,7 @@ Copyright © 2025 Steven Carpenter <steven.carpenter@skdevstudios.com>
 */
 package cmd
 
-import (
+import ( //TODO: P:5 THIS IS A TEST FOR INLINE
     "fmt"
     "os"
     "io/fs"
@@ -99,16 +99,20 @@ func extractTask(line string) string {
 
 //TODO: P:0 add support for TODO's not at start of line
 //TODO: P:0 add multiline support /* */
-// Extract comments from a line
+// Function to extract comment from a line that might have code before the comment
 func extractCommentFromLine(path, p string, ln int, line string) (Comment, error) {
-    if strings.HasPrefix(strings.TrimSpace(line), "//TODO:") {
+    // Use a regular expression to look for a TODO comment anywhere in the line
+    re := regexp.MustCompile(`//TODO:(.*)`)
+    matches := re.FindStringSubmatch(line)
+
+    if len(matches) > 0 {
         // Extract priority and task using helper functions
-        priority, err := extractPriority(line)
+        priority, err := extractPriority(matches[0])
         if err != nil {
             return Comment{}, err
         }
 
-        task := extractTask(line)
+        task := extractTask(matches[0])
 
         // Return the Comment object
         return Comment{

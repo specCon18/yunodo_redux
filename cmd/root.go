@@ -97,8 +97,6 @@ func extractTask(line string) string {
     return strings.TrimSpace(trimmedLine) // Return the task without priority
 }
 
-//TODO: P:0 add support for TODO's not at start of line
-//TODO: P:0 add multiline support /* */
 // Function to extract comment from a line that might have code before the comment
 func extractCommentFromLine(path, p string, ln int, line string) (Comment, error) {
     // Use a regular expression to look for a TODO comment anywhere in the line

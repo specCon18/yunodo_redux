@@ -133,8 +133,9 @@ func readFileTree(path string) []Comment {
             return err
         }
 
-        // Check if file has .go extension
-        if filepath.Ext(p) == ".go" {
+        // Check if file has a valid extension
+	ext := filepath.Ext(p)
+	if ext == ".go" || ext == ".rs" || ext == ".java" || ext == ".c"{
             // Read the file and check for comments
             file, err := os.Open(filepath.Join(path, p))
             if err != nil {

@@ -1,5 +1,4 @@
-module speccon18/yunodo_redux
-
+module speccon18/yunodo
 go 1.23.4
 
 require github.com/spf13/cobra v1.9.1

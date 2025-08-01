@@ -23,6 +23,6 @@ jobs:
       - uses: "DeterminateSystems/flakehub-push@main"
         with:
           visibility: "public"
-          name: "specCon18/yunodo"
+          name: "specCon18/yunodo_redux"
           tag: "${{ inputs.tag }}"
           include-output-paths: true
